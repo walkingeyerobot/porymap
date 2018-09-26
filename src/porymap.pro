@@ -85,3 +85,5 @@ RESOURCES += \
 
 INCLUDEPATH += core
 INCLUDEPATH += ui
+
+QMAKE_CXXFLAGS += -std=c++0x

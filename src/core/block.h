@@ -1,6 +1,7 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
+#include <stdint.h>
 #include <QObject>
 
 class Block
