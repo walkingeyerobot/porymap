@@ -1,3 +1,4 @@
+#include "config.h"
 #include "bordermetatilespixmapitem.h"
 #include "imageproviders.h"
 #include <QPainter>
@@ -35,7 +36,11 @@ void BorderMetatilesPixmapItem::draw() {
             int x = i * 16;
             int y = j * 16;
             int index = j * width + i;
-            QImage metatile_image = getMetatileImage(blocks->value(index).tile, map->layout->tileset_primary, map->layout->tileset_secondary);
+            QImage metatile_image = getMetatileImage(
+                        blocks->value(index).tile,
+                        map->layout->tileset_primary,
+                        map->layout->tileset_secondary,
+                        projectConfig.getTripleLayerMetatilesEnabled());
             QPoint metatile_origin = QPoint(x, y);
             painter.drawImage(metatile_origin, metatile_image);
         }

@@ -149,6 +149,7 @@ public:
     bool getObjectEventInConnectionEnabled();
     void setFloorNumberEnabled(bool enable);
     bool getFloorNumberEnabled();
+    bool getTripleLayerMetatilesEnabled();
     void setCustomScripts(QList<QString> scripts);
     QList<QString> getCustomScripts();
 protected:

@@ -59,6 +59,9 @@ void TilesetEditor::init(Project *project, QString primaryTilesetLabel, QString 
     this->ui->comboBox_layerType->addItem("Normal - Middle/Top", 0);
     this->ui->comboBox_layerType->addItem("Covered - Bottom/Middle", 1);
     this->ui->comboBox_layerType->addItem("Split - Bottom/Top", 2);
+    if (projectConfig.getTripleLayerMetatilesEnabled()) {
+        this->ui->comboBox_layerType->addItem("Triple - Bottom/Middle/Top", 3);
+    }
     this->ui->spinBox_paletteSelector->setMinimum(0);
     this->ui->spinBox_paletteSelector->setMaximum(Project::getNumPalettesTotal() - 1);
 
@@ -118,6 +121,11 @@ void TilesetEditor::refresh() {
     this->ui->graphicsView_Metatiles->setSceneRect(0, 0, this->metatileSelector->pixmap().width() + 2, this->metatileSelector->pixmap().height() + 2);
     this->ui->graphicsView_Metatiles->setFixedSize(this->metatileSelector->pixmap().width() + 2, this->metatileSelector->pixmap().height() + 2);
     this->ui->graphicsView_selectedTile->setFixedSize(this->selectedTilePixmapItem->pixmap().width() + 2, this->selectedTilePixmapItem->pixmap().height() + 2);
+}
+
+void TilesetEditor::drawMetatileLayersItem() {
+    this->metatileLayersItem->draw();
+    ui->graphicsView_metatileLayers->setFixedSize(this->metatileLayersItem->pixmap().width() + 2, this->metatileLayersItem->pixmap().height() + 2);
 }
 
 void TilesetEditor::initMetatileSelector()
@@ -192,7 +200,7 @@ void TilesetEditor::drawSelectedTiles() {
 
 void TilesetEditor::initMetatileLayersItem() {
     Metatile *metatile = Tileset::getMetatile(this->metatileSelector->getSelectedMetatile(), this->primaryTileset, this->secondaryTileset);
-    this->metatileLayersItem = new MetatileLayersItem(metatile, this->primaryTileset, this->secondaryTileset);
+    this->metatileLayersItem = new MetatileLayersItem(metatile, this->primaryTileset, this->secondaryTileset, projectConfig.getTripleLayerMetatilesEnabled());
     connect(this->metatileLayersItem, SIGNAL(tileChanged(int, int)),
             this, SLOT(onMetatileLayerTileChanged(int, int)));
     connect(this->metatileLayersItem, SIGNAL(selectedTilesChanged(QPoint, int, int)),
@@ -222,7 +230,7 @@ void TilesetEditor::onHoveredMetatileCleared() {
 void TilesetEditor::onSelectedMetatileChanged(uint16_t metatileId) {
     this->metatile = Tileset::getMetatile(metatileId, this->primaryTileset, this->secondaryTileset);
     this->metatileLayersItem->setMetatile(metatile);
-    this->metatileLayersItem->draw();
+    this->drawMetatileLayersItem();
     this->ui->comboBox_metatileBehaviors->setCurrentIndex(this->ui->comboBox_metatileBehaviors->findData(this->metatile->behavior));
     this->ui->lineEdit_metatileLabel->setText(this->metatile->label);
     this->ui->comboBox_layerType->setCurrentIndex(this->ui->comboBox_layerType->findData(this->metatile->layerType));
@@ -255,16 +263,25 @@ void TilesetEditor::onMetatileLayerTileChanged(int x, int y) {
         QPoint(2, 0),
         QPoint(3, 0),
         QPoint(2, 1),
-        QPoint(3, 1)
+        QPoint(3, 1),
+        QPoint(4, 0),
+        QPoint(5, 0),
+        QPoint(4, 1),
+        QPoint(5, 1),
     };
     Metatile *prevMetatile = this->metatile->copy();
     QPoint dimensions = this->tileSelector->getSelectionDimensions();
     QList<Tile> tiles = this->tileSelector->getSelectedTiles();
     int selectedTileIndex = 0;
+    bool isTripleLayerMetatile = projectConfig.getTripleLayerMetatilesEnabled() && this->metatile->layerType == 3;
+    int maxTileIndex = isTripleLayerMetatile ? 12: 8;
+    uint16_t metatileId = metatileSelector->getSelectedMetatile();
+    Metatile *burnerMetatile = Tileset::getMetatile(metatileId + 1, this->primaryTileset, this->secondaryTileset);
+    Metatile *beforeMetatile = Tileset::getMetatile(metatileId - 1, this->primaryTileset, this->secondaryTileset);
     for (int j = 0; j < dimensions.y(); j++) {
         for (int i = 0; i < dimensions.x(); i++) {
             int tileIndex = ((x + i) / 2 * 4) + ((y + j) * 2) + ((x + i) % 2);
-            if (tileIndex < 8
+            if (tileIndex < maxTileIndex
              && tileCoords.at(tileIndex).x() >= x
              && tileCoords.at(tileIndex).y() >= y){
                 Tile *tile = &(*this->metatile->tiles)[tileIndex];
@@ -272,13 +289,26 @@ void TilesetEditor::onMetatileLayerTileChanged(int x, int y) {
                 tile->xflip = tiles.at(selectedTileIndex).xflip;
                 tile->yflip = tiles.at(selectedTileIndex).yflip;
                 tile->palette = tiles.at(selectedTileIndex).palette;
+                if (projectConfig.getTripleLayerMetatilesEnabled()) {
+                    if (isTripleLayerMetatile && tileIndex >= 8) {
+                        if (burnerMetatile) {
+                            Tile *burnerTile = &(*burnerMetatile->tiles)[tileIndex - 4];
+                            *burnerTile = *tile;
+                        }
+                    } else if (tileIndex >=4 && tileIndex < 8) {
+                        if (beforeMetatile && beforeMetatile->layerType == 3) {
+                            Tile *topTile = &(*beforeMetatile->tiles)[tileIndex + 4];
+                            *topTile = *tile;
+                        }
+                    }
+                }
             }
             selectedTileIndex++;
         }
     }
 
     this->metatileSelector->draw();
-    this->metatileLayersItem->draw();
+    this->drawMetatileLayersItem();
     this->hasUnsavedChanges = true;
 
     MetatileHistoryItem *commit = new MetatileHistoryItem(metatileSelector->getSelectedMetatile(), prevMetatile, this->metatile->copy());
@@ -289,10 +319,12 @@ void TilesetEditor::onMetatileLayerSelectionChanged(QPoint selectionOrigin, int 
     QList<Tile> tiles;
     int x = selectionOrigin.x();
     int y = selectionOrigin.y();
+    bool isTripleLayerMetatile = projectConfig.getTripleLayerMetatilesEnabled() && this->metatile->layerType == 3;
+    int maxTileIndex = isTripleLayerMetatile ? 12: 8;
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
             int tileIndex = ((x + i) / 2 * 4) + ((y + j) * 2) + ((x + i) % 2);
-            if (tileIndex < 8) {
+            if (tileIndex < maxTileIndex) {
                 tiles.append(this->metatile->tiles->at(tileIndex));
             }
         }
@@ -371,11 +403,33 @@ void TilesetEditor::saveMetatileLabel()
 
 void TilesetEditor::on_comboBox_layerType_activated(int layerType)
 {
+    uint16_t metatileId = metatileSelector->getSelectedMetatile();
     if (this->metatile) {
         Metatile *prevMetatile = this->metatile->copy();
+        if (projectConfig.getTripleLayerMetatilesEnabled()) {
+            if (layerType == 3) {
+                // Augment the current metatile's tile list with the burner's
+                // second 4 tiles.
+                Metatile *burnerMetatile = Tileset::getMetatile(metatileId + 1, this->primaryTileset, this->secondaryTileset);
+                if (burnerMetatile) {
+                    for (int i = 0; i < 4; i++)
+                        this->metatile->tiles->append(burnerMetatile->tiles->value(4 + i));
+                } else {
+                    for (int i = 0; i < 4; i++)
+                        this->metatile->tiles->append(Tile());
+                }
+            } else {
+                // Ensure this metatile only has 8 tiles (2 layers)
+                while (this->metatile->tiles->size() > 8) {
+                    this->metatile->tiles->pop_back();
+                }
+            }
+        }
         this->metatile->layerType = static_cast<uint8_t>(layerType);
-        MetatileHistoryItem *commit = new MetatileHistoryItem(metatileSelector->getSelectedMetatile(), prevMetatile, this->metatile->copy());
+        MetatileHistoryItem *commit = new MetatileHistoryItem(metatileId, prevMetatile, this->metatile->copy());
         metatileHistory.push(commit);
+        this->drawMetatileLayersItem();
+        this->metatileSelector->draw();
     }
 }
 
@@ -676,7 +730,7 @@ void TilesetEditor::on_actionUndo_triggered()
         this->metatile->copyInPlace(prev);
         this->metatileSelector->select(commit->metatileId);
         this->metatileSelector->draw();
-        this->metatileLayersItem->draw();
+        this->drawMetatileLayersItem();
         this->metatileLayersItem->clearLastModifiedCoords();
     }
 }
@@ -694,7 +748,7 @@ void TilesetEditor::on_actionRedo_triggered()
         this->metatile->copyInPlace(next);
         this->metatileSelector->select(commit->metatileId);
         this->metatileSelector->draw();
-        this->metatileLayersItem->draw();
+        this->drawMetatileLayersItem();
         this->metatileLayersItem->clearLastModifiedCoords();
     }
 }

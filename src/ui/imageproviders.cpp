@@ -13,16 +13,16 @@ QImage getCollisionMetatileImage(int collision, int elevation) {
     return collisionImage.toImage();
 }
 
-QImage getMetatileImage(uint16_t tile, Tileset *primaryTileset, Tileset *secondaryTileset, bool useTruePalettes) {
+QImage getMetatileImage(uint16_t metatileId, Tileset *primaryTileset, Tileset *secondaryTileset, bool tripleLayer, bool useTruePalettes) {
     QImage metatile_image(16, 16, QImage::Format_RGBA8888);
 
-    Metatile* metatile = Tileset::getMetatile(tile, primaryTileset, secondaryTileset);
+    Metatile* metatile = Tileset::getMetatile(metatileId, primaryTileset, secondaryTileset);
     if (!metatile || !metatile->tiles) {
         metatile_image.fill(Qt::magenta);
         return metatile_image;
     }
 
-    Tileset* blockTileset = Tileset::getBlockTileset(tile, primaryTileset, secondaryTileset);
+    Tileset* blockTileset = Tileset::getBlockTileset(metatileId, primaryTileset, secondaryTileset);
     if (!blockTileset) {
         metatile_image.fill(Qt::magenta);
         return metatile_image;
@@ -30,11 +30,19 @@ QImage getMetatileImage(uint16_t tile, Tileset *primaryTileset, Tileset *seconda
     QList<QList<QRgb>> palettes = Tileset::getBlockPalettes(primaryTileset, secondaryTileset, useTruePalettes);
 
     QPainter metatile_painter(&metatile_image);
-    for (int layer = 0; layer < 2; layer++)
+    Metatile* burnerMetatile = Tileset::getMetatile(metatileId + 1, primaryTileset, secondaryTileset);
+    bool isTripleLayerMetatile = tripleLayer && metatile->layerType == 3;
+    int numLayers = isTripleLayerMetatile ? 3 : 2;
+    for (int layer = 0; layer < numLayers; layer++)
     for (int y = 0; y < 2; y++)
     for (int x = 0; x < 2; x++) {
-        Tile tile_ = metatile->tiles->value((y * 2) + x + (layer * 4));
-        QImage tile_image = getTileImage(tile_.tile, primaryTileset, secondaryTileset);
+        Tile tile;
+        if (isTripleLayerMetatile && layer == 2 && burnerMetatile) {
+            tile = burnerMetatile->tiles->value(4 + (y * 2) + x);
+        } else {
+            tile = metatile->tiles->value((y * 2) + x + (layer * 4));
+        }
+        QImage tile_image = getTileImage(tile.tile, primaryTileset, secondaryTileset);
         if (tile_image.isNull()) {
             // Some metatiles specify tiles that are outside the valid range.
             // These are treated as completely transparent, so they can be skipped without
@@ -47,13 +55,13 @@ QImage getMetatileImage(uint16_t tile, Tileset *primaryTileset, Tileset *seconda
         }
 
         // Colorize the metatile tiles with its palette.
-        if (tile_.palette < palettes.length()) {
-            QList<QRgb> palette = palettes.value(tile_.palette);
+        if (tile.palette < palettes.length()) {
+            QList<QRgb> palette = palettes.value(tile.palette);
             for (int j = 0; j < palette.length(); j++) {
                 tile_image.setColor(j, palette.value(j));
             }
         } else {
-            logWarn(QString("Tile '%1' is referring to invalid palette number: '%2'").arg(tile_.tile).arg(tile_.palette));
+            logWarn(QString("Tile '%1' is referring to invalid palette number: '%2'").arg(tile.tile).arg(tile.palette));
         }
 
         // The top layer of the metatile has its first color displayed at transparent.
@@ -64,7 +72,7 @@ QImage getMetatileImage(uint16_t tile, Tileset *primaryTileset, Tileset *seconda
         }
 
         QPoint origin = QPoint(x*8, y*8);
-        metatile_painter.drawImage(origin, tile_image.mirrored(tile_.xflip, tile_.yflip));
+        metatile_painter.drawImage(origin, tile_image.mirrored(tile.xflip, tile.yflip));
     }
     metatile_painter.end();
 

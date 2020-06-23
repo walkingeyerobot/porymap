@@ -27,7 +27,7 @@ void Metatile::copyInPlace(Metatile *other) {
     this->encounterType = other->encounterType;
     this->terrainType = other->terrainType;
     this->label = other->label;
-    for (int i = 0; i < this->tiles->length(); i++) {
+    for (int i = 0; i < this->tiles->length() && i < other->tiles->length(); i++) {
         (*this->tiles)[i] = other->tiles->at(i);
     }
 }

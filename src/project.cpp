@@ -1644,10 +1644,19 @@ void Project::loadTilesetMetatiles(Tileset* tileset) {
                             (static_cast<unsigned char>(data.at(i * 4 + 2)) << 16) | 
                             (static_cast<unsigned char>(data.at(i * 4 + 1)) << 8) | 
                             (static_cast<unsigned char>(data.at(i * 4 + 0)));
-                tileset->metatiles->at(i)->behavior = value & 0x1FF;
-                tileset->metatiles->at(i)->terrainType = (value & 0x3E00) >> 9;
-                tileset->metatiles->at(i)->encounterType = (value & 0x7000000) >> 24;
-                tileset->metatiles->at(i)->layerType = (value & 0x60000000) >> 29;
+                Metatile *metatile = tileset->metatiles->at(i);
+                metatile->behavior = value & 0x1FF;
+                metatile->terrainType = (value & 0x3E00) >> 9;
+                metatile->encounterType = (value & 0x7000000) >> 24;
+                metatile->layerType = (value & 0x60000000) >> 29;
+                if (projectConfig.getTripleLayerMetatilesEnabled() && metatile->layerType == 3) {
+                    Metatile *burnerMetatile = tileset->metatiles->value(i + 1);
+                    if (burnerMetatile) {
+                        for (int j = 0; j < 4; j++) {
+                            metatile->tiles->append(burnerMetatile->tiles->value(4 + j));
+                        }
+                    }
+                }
                 if (value & ~(0x67003FFF))
                     unusedAttribute = true;
             }
@@ -1662,10 +1671,19 @@ void Project::loadTilesetMetatiles(Tileset* tileset) {
             }
             for (int i = 0; i < num_metatileAttrs; i++) {
                 int value = (static_cast<unsigned char>(data.at(i * 2 + 1)) << 8) | static_cast<unsigned char>(data.at(i * 2));
-                tileset->metatiles->at(i)->behavior = value & 0xFF;
-                tileset->metatiles->at(i)->layerType = (value & 0xF000) >> 12;
-                tileset->metatiles->at(i)->encounterType = 0;
-                tileset->metatiles->at(i)->terrainType = 0;
+                Metatile *metatile = tileset->metatiles->at(i);
+                metatile->behavior = value & 0xFF;
+                metatile->layerType = (value & 0xF000) >> 12;
+                metatile->encounterType = 0;
+                metatile->terrainType = 0;
+                if (projectConfig.getTripleLayerMetatilesEnabled() && metatile->layerType == 3) {
+                    Metatile *burnerMetatile = tileset->metatiles->value(i + 1);
+                    if (burnerMetatile) {
+                        for (int j = 0; j < 4; j++) {
+                            metatile->tiles->append(burnerMetatile->tiles->value(4 + j));
+                        }
+                    }
+                }
             }
         }
     } else {

@@ -615,6 +615,10 @@ bool ProjectConfig::getFloorNumberEnabled() {
     return this->enableFloorNumber;
 }
 
+bool ProjectConfig::getTripleLayerMetatilesEnabled() {
+    return true;
+}
+
 void ProjectConfig::setCustomScripts(QList<QString> scripts) {
     this->customScripts = scripts;
     this->save();

@@ -9,10 +9,11 @@
 class MetatileLayersItem: public SelectablePixmapItem {
     Q_OBJECT
 public:
-    MetatileLayersItem(Metatile *metatile, Tileset *primaryTileset, Tileset *secondaryTileset): SelectablePixmapItem(16, 16, 4, 2) {
+    MetatileLayersItem(Metatile *metatile, Tileset *primaryTileset, Tileset *secondaryTileset, bool tripleLayer): SelectablePixmapItem(16, 16, 6, 2) {
         this->metatile = metatile;
         this->primaryTileset = primaryTileset;
         this->secondaryTileset = secondaryTileset;
+        this->tripleLayer = tripleLayer;
         this->clearLastModifiedCoords();
     }
     void draw();
@@ -24,6 +25,7 @@ private:
     Tileset *primaryTileset;
     Tileset *secondaryTileset;
     QPoint prevChangedTile;
+    bool tripleLayer;
     void getBoundedCoords(QPointF, int*, int*);
 signals:
     void tileChanged(int, int);
