@@ -1649,14 +1649,6 @@ void Project::loadTilesetMetatiles(Tileset* tileset) {
                 metatile->terrainType = (value & 0x3E00) >> 9;
                 metatile->encounterType = (value & 0x7000000) >> 24;
                 metatile->layerType = (value & 0x60000000) >> 29;
-                if (projectConfig.getTripleLayerMetatilesEnabled() && metatile->layerType == 3) {
-                    Metatile *burnerMetatile = tileset->metatiles->value(i + 1);
-                    if (burnerMetatile) {
-                        for (int j = 0; j < 4; j++) {
-                            metatile->tiles->append(burnerMetatile->tiles->value(4 + j));
-                        }
-                    }
-                }
                 if (value & ~(0x67003FFF))
                     unusedAttribute = true;
             }
@@ -1676,14 +1668,6 @@ void Project::loadTilesetMetatiles(Tileset* tileset) {
                 metatile->layerType = (value & 0xF000) >> 12;
                 metatile->encounterType = 0;
                 metatile->terrainType = 0;
-                if (projectConfig.getTripleLayerMetatilesEnabled() && metatile->layerType == 3) {
-                    Metatile *burnerMetatile = tileset->metatiles->value(i + 1);
-                    if (burnerMetatile) {
-                        for (int j = 0; j < 4; j++) {
-                            metatile->tiles->append(burnerMetatile->tiles->value(4 + j));
-                        }
-                    }
-                }
             }
         }
     } else {

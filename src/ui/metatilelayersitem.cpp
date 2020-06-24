@@ -20,11 +20,19 @@ void MetatileLayersItem::draw() {
 
     bool isTripleLayerMetatile = this->tripleLayer && this->metatile->layerType == 3;
     int width = isTripleLayerMetatile ? 96 : 64;
+    int numTiles = isTripleLayerMetatile ? 12 : 8;
+    Metatile* burnerMetatile = Tileset::getMetatile(metatileId + 1, primaryTileset, secondaryTileset);
+
     QPixmap pixmap(width, 32);
     QPainter painter(&pixmap);
-    int numTiles = isTripleLayerMetatile ? 12 : 8;
     for (int i = 0; i < numTiles; i++) {
-        Tile tile = this->metatile->tiles->at(i);
+        Tile tile;
+        if (i < 8) {
+            tile = this->metatile->tiles->at(i);
+        } else if (burnerMetatile) {
+            tile = burnerMetatile->tiles->at(i - 4);
+        }
+
         QImage tileImage = getPalettedTileImage(tile.tile, this->primaryTileset, this->secondaryTileset, tile.palette, true)
                 .mirrored(tile.xflip, tile.yflip)
                 .scaled(16, 16);
@@ -34,8 +42,9 @@ void MetatileLayersItem::draw() {
     this->setPixmap(pixmap);
 }
 
-void MetatileLayersItem::setMetatile(Metatile *metatile) {
+void MetatileLayersItem::setMetatile(Metatile *metatile, uint16_t metatileId) {
     this->metatile = metatile;
+    this->metatileId = metatileId;
     this->clearLastModifiedCoords();
 }
 

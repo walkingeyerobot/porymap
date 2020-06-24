@@ -9,8 +9,9 @@
 class MetatileLayersItem: public SelectablePixmapItem {
     Q_OBJECT
 public:
-    MetatileLayersItem(Metatile *metatile, Tileset *primaryTileset, Tileset *secondaryTileset, bool tripleLayer): SelectablePixmapItem(16, 16, 6, 2) {
+    MetatileLayersItem(Metatile *metatile, uint16_t metatileId, Tileset *primaryTileset, Tileset *secondaryTileset, bool tripleLayer): SelectablePixmapItem(16, 16, 6, 2) {
         this->metatile = metatile;
+        this->metatileId = metatileId;
         this->primaryTileset = primaryTileset;
         this->secondaryTileset = secondaryTileset;
         this->tripleLayer = tripleLayer;
@@ -18,10 +19,11 @@ public:
     }
     void draw();
     void setTilesets(Tileset*, Tileset*);
-    void setMetatile(Metatile*);
+    void setMetatile(Metatile*, uint16_t);
     void clearLastModifiedCoords();
 private:
     Metatile* metatile;
+    uint16_t metatileId;
     Tileset *primaryTileset;
     Tileset *secondaryTileset;
     QPoint prevChangedTile;

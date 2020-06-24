@@ -15,10 +15,11 @@ class TilesetEditor;
 
 class MetatileHistoryItem {
 public:
-    MetatileHistoryItem(uint16_t metatileId, Metatile *prevMetatile, Metatile *newMetatile) {
+    MetatileHistoryItem(uint16_t metatileId, Metatile *prevMetatile, Metatile *newMetatile, bool isBurner = false) {
         this->metatileId = metatileId;
         this->prevMetatile = prevMetatile;
         this->newMetatile = newMetatile;
+        this->isBurner = isBurner;
     }
     ~MetatileHistoryItem() {
         delete this->prevMetatile;
@@ -27,6 +28,7 @@ public:
     uint16_t metatileId;
     Metatile *prevMetatile;
     Metatile *newMetatile;
+    bool isBurner;
 };
 
 class TilesetEditor : public QMainWindow
