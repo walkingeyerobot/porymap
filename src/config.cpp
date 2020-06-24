@@ -423,6 +423,12 @@ void ProjectConfig::parseConfigKeyValue(QString key, QString value) {
         if (!ok) {
             logWarn(QString("Invalid config value for enable_floor_number: '%1'. Must be 0 or 1.").arg(value));
         }
+    } else if (key == "triple_layer_metatiles") {
+        bool ok;
+        this->enableTripleLayerMetatiles = value.toInt(&ok);
+        if (!ok) {
+            logWarn(QString("Invalid config value for triple_layer_metatiles: '%1'. Must be 0 or 1.").arg(value));
+        }
     } else if (key == "custom_scripts") {
         this->customScripts.clear();
         QList<QString> paths = value.split(",");
@@ -449,6 +455,7 @@ void ProjectConfig::setUnreadKeys() {
     if (!readKeys.contains("enable_heal_location_respawn_data")) this->enableHealLocationRespawnData = isPokefirered;
     if (!readKeys.contains("enable_object_event_in_connection")) this->enableObjectEventInConnection = isPokefirered;
     if (!readKeys.contains("enable_floor_number")) this->enableFloorNumber = isPokefirered;
+    if (!readKeys.contains("triple_layer_metatiles")) this->enableTripleLayerMetatiles = false;
 }
 
 QMap<QString, QString> ProjectConfig::getKeyValueMap() {
@@ -465,6 +472,7 @@ QMap<QString, QString> ProjectConfig::getKeyValueMap() {
     map.insert("enable_object_event_in_connection", QString::number(this->enableObjectEventInConnection));
     map.insert("enable_floor_number", QString::number(this->enableFloorNumber));
     map.insert("custom_scripts", this->customScripts.join(","));
+    map.insert("triple_layer_metatiles", QString::number(this->enableTripleLayerMetatiles));
     return map;
 }
 
@@ -503,6 +511,7 @@ void ProjectConfig::onNewConfigFileCreated() {
     this->enableHealLocationRespawnData = isPokefirered;
     this->enableObjectEventInConnection = isPokefirered;
     this->enableFloorNumber = isPokefirered;
+    this->enableTripleLayerMetatiles = false;
     this->useEncounterJson = true;
     this->usePoryScript = false;
     this->customScripts.clear();
@@ -615,8 +624,13 @@ bool ProjectConfig::getFloorNumberEnabled() {
     return this->enableFloorNumber;
 }
 
+void ProjectConfig::setTripleLayerMetatilesEnabled(bool enable) {
+    this->enableTripleLayerMetatiles = enable;
+    this->save();
+}
+
 bool ProjectConfig::getTripleLayerMetatilesEnabled() {
-    return true;
+    return this->enableTripleLayerMetatiles;
 }
 
 void ProjectConfig::setCustomScripts(QList<QString> scripts) {
