@@ -1295,12 +1295,10 @@ void MainWindow::duplicate() {
 
 // Open current map scripts in system default editor for .inc files
 void MainWindow::openInTextEditor() {
-    bool usePoryscript = projectConfig.getUsePoryScript();
-    QString path = QDir::cleanPath("file://" + editor->project->root + QDir::separator() + "data/maps/" + editor->map->name + "/scripts");
-
-    // Try opening scripts file, if opening .pory failed try again with .inc
-    if (!QDesktopServices::openUrl(QUrl(path + editor->project->getScriptFileExtension(usePoryscript))) && usePoryscript)
-        QDesktopServices::openUrl(QUrl(path + editor->project->getScriptFileExtension(false)));
+    QStringList args;
+    args << "code" << "-r" << "/home/mitch/repos/pokeemerald/data/maps/" + editor->map->name + "/scripts" + editor->project->getScriptFileExtension(false);
+    QProcess *myProcess = new QProcess();
+    myProcess->start("wsl", args);
 }
 
 void MainWindow::on_action_Save_triggered() {
