@@ -938,7 +938,7 @@ void Editor::onHoveredMapMovementPermissionCleared() {
     }
 }
 
-QString Editor::getMovementPermissionText(uint16_t collision, uint16_t elevation){
+QString Editor::getMovementPermissionText(uint16_t collision, uint16_t elevation) {
     QString message;
     if (collision == 0 && elevation == 0) {
         message = "Collision: Transition between elevations";
@@ -1011,11 +1011,27 @@ void Editor::onMapEndPaint(QGraphicsSceneMouseEvent *, MapPixmapItem *item) {
 
 void Editor::setSmartPathCursorMode(QGraphicsSceneMouseEvent *event)
 {
-    bool smartPathsEnabled = event->modifiers() & Qt::ShiftModifier;
-    if (smartPathsEnabled || settings->smartPathsEnabled) {
-        this->cursorMapTileRect->setSmartPathMode();
+    bool shiftPressed = event->modifiers() & Qt::ShiftModifier;
+    if (settings->smartPathsEnabled) {
+        if (!shiftPressed) {
+            this->cursorMapTileRect->setSmartPathMode(true);
+        } else {
+            this->cursorMapTileRect->setSmartPathMode(false);
+        }
     } else {
-        this->cursorMapTileRect->setNormalPathMode();
+        if (shiftPressed) {
+            this->cursorMapTileRect->setSmartPathMode(true);
+        } else {
+            this->cursorMapTileRect->setSmartPathMode(false);
+        }
+    }
+}
+
+void Editor::setStraightPathCursorMode(QGraphicsSceneMouseEvent *event) {
+    if (event->modifiers() & Qt::ControlModifier) {
+        this->cursorMapTileRect->setStraightPathMode(true);
+    } else {
+        this->cursorMapTileRect->setStraightPathMode(false);
     }
 }
 
@@ -1041,6 +1057,12 @@ void Editor::mouseEvent_map(QGraphicsSceneMouseEvent *event, MapPixmapItem *item
                 }
             } else {
                 this->setSmartPathCursorMode(event);
+                this->setStraightPathCursorMode(event);
+                if (this->cursorMapTileRect->getStraightPathMode()) {
+                    item->lockNondominantAxis(event);
+                    x = item->adjustCoord(x, MapPixmapItem::Axis::X);
+                    y = item->adjustCoord(y, MapPixmapItem::Axis::Y);
+                }
                 item->paint(event);
             }
         } else if (map_edit_mode == "select") {
@@ -1060,6 +1082,12 @@ void Editor::mouseEvent_map(QGraphicsSceneMouseEvent *event, MapPixmapItem *item
                 item->pick(event);
             }
         } else if (map_edit_mode == "shift") {
+            this->setStraightPathCursorMode(event);
+            if (this->cursorMapTileRect->getStraightPathMode()) {
+                item->lockNondominantAxis(event);
+                x = item->adjustCoord(x, MapPixmapItem::Axis::X);
+                y = item->adjustCoord(y, MapPixmapItem::Axis::Y);
+            }
             item->shift(event);
         }
     } else if (item->paintingMode == MapPixmapItem::PaintMode::EventObjects) {
@@ -1130,8 +1158,7 @@ void Editor::mouseEvent_collision(QGraphicsSceneMouseEvent *event, CollisionPixm
     QPointF pos = event->pos();
     int x = static_cast<int>(pos.x()) / 16;
     int y = static_cast<int>(pos.y()) / 16;
-    this->playerViewRect->updateLocation(x, y);
-    this->cursorMapTileRect->updateLocation(x, y);
+
     if (map_edit_mode == "paint") {
         if (event->buttons() & Qt::RightButton) {
             item->updateMovementPermissionSelection(event);
@@ -1142,6 +1169,12 @@ void Editor::mouseEvent_collision(QGraphicsSceneMouseEvent *event, CollisionPixm
                 item->floodFill(event);
             }
         } else {
+            this->setStraightPathCursorMode(event);
+            if (this->cursorMapTileRect->getStraightPathMode()) {
+                item->lockNondominantAxis(event);
+                x = item->adjustCoord(x, MapPixmapItem::Axis::X);
+                y = item->adjustCoord(y, MapPixmapItem::Axis::Y);
+            }
             item->paint(event);
         }
     } else if (map_edit_mode == "select") {
@@ -1157,8 +1190,16 @@ void Editor::mouseEvent_collision(QGraphicsSceneMouseEvent *event, CollisionPixm
     } else if (map_edit_mode == "pick") {
         item->pick(event);
     } else if (map_edit_mode == "shift") {
+        this->setStraightPathCursorMode(event);
+        if (this->cursorMapTileRect->getStraightPathMode()) {
+            item->lockNondominantAxis(event);
+            x = item->adjustCoord(x, MapPixmapItem::Axis::X);
+            y = item->adjustCoord(y, MapPixmapItem::Axis::Y);
+        }
         item->shift(event);
     }
+    this->playerViewRect->updateLocation(x, y);
+    this->cursorMapTileRect->updateLocation(x, y);
 }
 
 bool Editor::displayMap() {

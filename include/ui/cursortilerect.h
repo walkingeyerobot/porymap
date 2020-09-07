@@ -50,11 +50,12 @@ public:
     void stopAnchor();
     void initRightClickSelectionAnchor(int coordX, int coordY);
     void stopRightClickSelectionAnchor();
-    void setSmartPathMode();
+    void setSmartPathMode(bool enable);
     bool getSmartPathMode() { return this->smartPathMode; }
+    void setStraightPathMode(bool enable);
+    bool getStraightPathMode() { return this->straightPathMode; }
     void setSingleTileMode();
     void stopSingleTileMode();
-    void setNormalPathMode();
     void updateLocation(int x, int y);
     void updateSelectionSize(int width, int height);
     void setVisibility(bool visible);
@@ -66,6 +67,7 @@ private:
     bool anchored;
     bool rightClickSelectionAnchored;
     bool smartPathMode;
+    bool straightPathMode;
     bool singleTileMode;
     int anchorCoordX;
     int anchorCoordY;

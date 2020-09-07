@@ -9,19 +9,29 @@ void CollisionPixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
         setCursor(this->settings->mapCursor);
     }
 }
+
 void CollisionPixmapItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *) {
     emit this->hoveredMapMovementPermissionCleared();
     if (this->settings->betterCursors && this->paintingMode == MapPixmapItem::PaintMode::Metatiles){
         unsetCursor();
     }
 }
+
 void CollisionPixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    QPointF pos = event->pos();
+    int x = static_cast<int>(pos.x()) / 16;
+    int y = static_cast<int>(pos.y()) / 16;
+    this->paint_tile_initial_x = this->straight_path_initial_x = x;
+    this->paint_tile_initial_y = this->straight_path_initial_y = y;
     emit mouseEvent(event, this);
 }
+
 void CollisionPixmapItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     emit mouseEvent(event, this);
 }
+
 void CollisionPixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    this->lockedAxis = CollisionPixmapItem::Axis::None;
     emit mouseEvent(event, this);
 }
 
@@ -41,6 +51,17 @@ void CollisionPixmapItem::paint(QGraphicsSceneMouseEvent *event) {
         QPointF pos = event->pos();
         int x = static_cast<int>(pos.x()) / 16;
         int y = static_cast<int>(pos.y()) / 16;
+
+        // Set straight paths on/off and snap to the dominant axis when on
+        if (event->modifiers() & Qt::ControlModifier) {
+            this->lockNondominantAxis(event);
+            x = this->adjustCoord(x, MapPixmapItem::Axis::X);
+            y = this->adjustCoord(y, MapPixmapItem::Axis::Y);
+        } else {
+            this->prevStraightPathState = false;
+            this->lockedAxis = MapPixmapItem::Axis::None;
+        }
+
         Block *block = map->getBlock(x, y);
         if (block) {
             block->collision = this->movementPermissionsSelector->getSelectedCollision();
